@@ -1,5 +1,6 @@
 require "sinatra"
 require "sinatra/reloader"
+require "sinatra/content_for"
 require "tilt/erubis"
 
 configure do
@@ -24,6 +25,18 @@ end
 # Render the new list form
 get "/lists/new" do
   erb :new_list, layout: :layout
+end
+
+# Edit List Name
+put '/lists/edit' do
+  erb :edit_list, layout: :layout
+end
+
+# Display a single todo list
+get "/lists/:id" do
+  id = params[:id].to_i
+  @list = session[:lists][id]
+  erb :list, layout: :layout
 end
 
 # Return an error msg if the name is invalid; returns nil if name is valid
