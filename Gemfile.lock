@@ -4,7 +4,7 @@ GEM
     backports (3.6.8)
     erubis (2.7.0)
     multi_json (1.12.1)
-    puma (3.4.0)
+    pg (0.18.4)
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
@@ -28,12 +28,12 @@ PLATFORMS
 
 DEPENDENCIES
   erubis
-  puma
+  pg
   sinatra (~> 1.4.7)
   sinatra-contrib
 
 RUBY VERSION
-   ruby 2.2.1p85
+   ruby 2.3.1p112
 
 BUNDLED WITH
    1.12.5
