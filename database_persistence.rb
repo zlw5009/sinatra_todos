@@ -16,7 +16,10 @@ class DatabasePersistence
     result = query(sql, id)
 
     tuple = result.first
-    {id: tuple["id"], name: tuple["name"], todos: []}
+
+    list_id = tuple["id"].to_i
+    todos = find_todos_for_list(list_id)
+    { id: list_id, name: tuple["name"], todos: todos }
   end
 
   def all_lists
@@ -24,17 +27,21 @@ class DatabasePersistence
     result = query(sql)
 
     result.map do |tuple|
-      {id: tuple["id"], name: tuple["name"], todos: []}
+      list_id = tuple["id"].to_i
+      todos = find_todos_for_list(list_id)
+
+      { id: list_id, name: tuple["name"], todos: todos }
     end
   end
 
   def create_new_list(list_name)
-    # id = next_element_id(@session[:lists])
-    # @session[:lists] << { id: id, name: list_name, todos: [] }
+    sql = "INSERT INTO lists (name) VALUES ($1)"
+    query(sql, list_name)
   end
 
   def delete_list(id)
-    # @session[:lists].reject! { |list| list[:id] == id }
+    query("DELETE FROM todos WHERE list_id = $1", id)
+    query("DELETE FROM lists WHERE id = $1", id)
   end
 
   def update_list_name(id, new_name)
@@ -64,5 +71,18 @@ class DatabasePersistence
     # list[:todos].each do |todo|
       # todo[:completed] = true
     # end
+  end
+
+  private
+
+  def find_todos_for_list(list_id)
+    todos_sql = "SELECT * FROM todos WHERE list_id = $1"
+    todos_result = query(todos_sql, list_id)
+
+    todos_result.map do |todo_tuple|
+      { id: todo_tuple["id"], 
+        name: todo_tuple["name"], 
+        completed: todo_tuple["completed"] == 't' }
+    end
   end
 end
