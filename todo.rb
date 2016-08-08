@@ -2,7 +2,7 @@ require "sinatra"
 require "sinatra/content_for"
 require "tilt/erubis"
 
-require_relative "database_persistence"
+require_relative "sequel_persistence"
 
 configure do
   enable :sessions
@@ -12,24 +12,16 @@ end
 
 configure(:development) do
   require "sinatra/reloader"
-  also_reload "database_persistence.rb"
+  also_reload "sequel_persistence.rb"
 end
 
 helpers do
   def list_complete?(list)
-    todos_count(list) > 0 && todos_remaining_count(list) == 0
+    list[:todos_count] > 0 && list[:todos_remaining_count] == 0
   end
 
   def list_class(list)
     "complete" if list_complete?(list)
-  end
-
-  def todos_count(list)
-    list[:todos].size
-  end
-
-  def todos_remaining_count(list)
-    list[:todos].count { |todo| !todo[:completed] }
   end
 
   def sort_lists(lists, &block)
@@ -73,7 +65,7 @@ def error_for_todo(name)
 end
 
 before do
-  @storage = DatabasePersistence.new(logger)
+  @storage = SequelPersistence.new(logger)
 end
 
 get "/" do
@@ -110,6 +102,7 @@ end
 get "/lists/:id" do
   @list_id = params[:id].to_i
   @list = load_list(@list_id)
+  @todos = @storage.find_todos_for_list(@list_id)
   erb :list, layout: :layout
 end
 
@@ -144,6 +137,7 @@ post "/lists/:id/destroy" do
   @storage.delete_list(id)
 
   session[:success] = "The list has been deleted."
+
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     "/lists"
   else
@@ -177,12 +171,8 @@ post "/lists/:list_id/todos/:id/destroy" do
   todo_id = params[:id].to_i
   @storage.delete_todo_from_list(@list_id, todo_id)
 
-  if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
-    status 204
-  else
-    session[:success] = "The todo has been deleted."
-    redirect "/lists/#{@list_id}"
-  end
+  session[:success] = "The todo has been deleted."
+  redirect "/lists/#{@list_id}"
 end
 
 # Update the status of a todo
